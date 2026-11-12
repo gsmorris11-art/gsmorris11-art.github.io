@@ -89,7 +89,7 @@ input[type=text],input[type=email],input[type=tel],select{font:inherit;font-weig
 <body>
 <div class="wrap">
   <div class="brand"><strong>Build-Ready Score</strong><span>Scott Morris · Union Home Mortgage</span></div>
-  <div class="preview" id="previewNote">Preview. The lead form and webinar button are not connected yet.</div>
+  <div class="preview" id="previewNote">Preview. The webinar button is not linked yet.</div>
 
   <!-- Intro -->
   <section class="sheet" id="intro">
@@ -169,8 +169,29 @@ input[type=text],input[type=email],input[type=tel],select{font:inherit;font-weig
 // ---- Settings to fill in when this goes live on your own site ----
 var CONFIG = {
   webinarUrl: "",   // webinar registration link
-  leadWebhook: ""   // URL that receives leads (Lofty, Zapier, etc.)
+  hubspot: {portalId: "247973818", formId: "f75597c9-98a6-4cfc-bac8-1f5924e0acfb"}
 };
+
+// Sends the lead to the HubSpot form. Resolves true only if HubSpot accepted it.
+function sendLead(lead){
+  var hs = CONFIG.hubspot; if (!hs) return Promise.resolve(false);
+  var body = JSON.stringify({
+    fields: [
+      {name:"firstname", value:lead.firstName},
+      {name:"email", value:lead.email},
+      {name:"phone", value:lead.phone},
+      {name:"message", value:lead.summary}
+    ],
+    context: {pageUri: location.href, pageName: "Build-Ready Score Quiz"}
+  });
+  var path = "/submissions/v3/integration/submit/" + hs.portalId + "/" + hs.formId;
+  function post(host){
+    return fetch("https://" + host + path, {method:"POST", headers:{"Content-Type":"application/json"}, body:body})
+      .then(function(r){ console.log("[quiz] " + host + " -> " + r.status); return r.ok; });
+  }
+  return post("api-na2.hsforms.com").catch(function(){return false;})
+    .then(function(ok){ return ok || post("api.hsforms.com").catch(function(){return false;}); });
+}
 
 var QUESTIONS = [
   {area:"Land", q:"Where are you with land?", gap:"Land is the first piece. If you own it, your equity can often count toward your down payment. If you don't, the lot and the build can sometimes be financed together.",
@@ -217,7 +238,7 @@ function scoreQuiz(answers){
 
 var $ = function(id){return document.getElementById(id);};
 var answers = [], cur = 0;
-if (CONFIG.webinarUrl && CONFIG.leadWebhook) $("previewNote").hidden = true;
+if (CONFIG.webinarUrl) $("previewNote").hidden = true;
 
 function show(id){
   ["intro","quiz","lead","results"].forEach(function(s){$(s).hidden = (s !== id);});
@@ -255,15 +276,9 @@ $("leadForm").addEventListener("submit", function(e){
   if (msg) return;
 
   var r = scoreQuiz(answers);
-  if (CONFIG.leadWebhook){
-    try{
-      fetch(CONFIG.leadWebhook, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({
-        firstName:fn, email:em, phone:ph, state:st, score:r.total, tier:r.tier.tag,
-        answers:QUESTIONS.map(function(q,i){return {area:q.area, answer:q.opts[answers[i]][0]};}),
-        source:"Build-Ready Score quiz"
-      })}).catch(function(){});
-    }catch(_){}
-  }
+  var summary = "Build-Ready Score: " + r.total + "/40 (" + r.tier.tag + ")\nBuilding in: " + st + "\nConsented to call/text/email: yes\n\n" +
+    QUESTIONS.map(function(q,i){return q.area + ": " + q.opts[answers[i]][0];}).join("\n");
+  sendLead({firstName:fn, email:em, phone:ph, summary:summary});
   renderResults(r, fn);
 });
 
