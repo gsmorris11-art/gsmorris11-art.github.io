@@ -85,6 +85,16 @@ input[type=text],input[type=email],input[type=tel],select{font:inherit;font-weig
 @media (max-width:400px){h1{font-size:32px}.score b{font-size:58px}}
 @media (prefers-reduced-motion:no-preference){.ruler .fill{transition:width .7s ease-out}}
 </style>
+<!-- Meta Pixel -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '852460741879817');
+fbq('track', 'PageView');
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -279,7 +289,7 @@ $("leadForm").addEventListener("submit", function(e){
   var summary = "Build-Ready Score: " + r.total + "/40 (" + r.tier.tag + ")\nBuilding in: " + st + "\nConsented to call/text/email: yes\n\n" +
     QUESTIONS.map(function(q,i){return q.area + ": " + q.opts[answers[i]][0];}).join("\n");
   currentLead = {firstName:fn, email:em, phone:ph, summary:summary};
-  sendLead(currentLead);
+  sendLead(currentLead).then(function(ok){ if (ok && window.fbq) fbq('track', 'Lead'); });
   renderResults(r, fn);
 });
 
@@ -293,7 +303,7 @@ function saveSeat(e){
     summary:"WEBINAR: Registered for Nov 25, 6 PM ET (from quiz)\n\n" + currentLead.summary};
   sendLead(lead).then(function(ok){
     delete btn.dataset.busy; note.hidden = false;
-    if (ok){ btn.hidden = true; note.textContent = "You're registered, " + currentLead.firstName + ". We'll email and text you the link to join before November 25."; }
+    if (ok){ if (window.fbq) fbq('track', 'CompleteRegistration'); btn.hidden = true; note.textContent = "You're registered, " + currentLead.firstName + ". We'll email and text you the link to join before November 25."; }
     else { btn.textContent = "Save my seat"; note.textContent = "We couldn't save your seat. Check your connection and tap again."; }
   });
 }
