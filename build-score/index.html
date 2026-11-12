@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build-Ready Score Quiz</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: one narrow column, like a site survey sheet. Stake-flag orange marks the single next action. */
+:root{
+  color-scheme: light;
+  --paper:#F2F4F0;
+  --sheet:#FFFFFF;
+  --ink:#16241F;
+  --muted:#5B6A64;
+  --line:#D5DBD4;
+  --pine:#2F5D4E;
+  --flag:#D9501A;
+  --flag-ink:#FFFFFF;
+  --display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:560px;margin:0 auto;padding:20px 18px 40px;display:flex;flex-direction:column;gap:18px}
+.brand{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:13px;color:var(--muted);border-bottom:2px solid var(--ink);padding-bottom:10px}
+.brand strong{font-family:var(--display);font-stretch:80%;font-weight:800;font-size:16px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink)}
+.preview{font-size:13px;background:#FFF3D6;border:1px solid #E6C56A;color:#5A4300;padding:8px 12px;border-radius:6px}
+.sheet{background:var(--sheet);border:1px solid var(--line);border-radius:10px;padding:24px 20px;display:flex;flex-direction:column;gap:16px}
+h1,h2{font-family:var(--display);font-stretch:82%;font-weight:800;line-height:1.05;margin:0;text-wrap:balance}
+h1{font-size:38px}
+h2{font-size:27px}
+p{margin:0}
+.lede{color:var(--muted)}
+.eyebrow{font-family:var(--display);font-stretch:80%;font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--pine)}
+.facts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:15px}
+.facts li{display:flex;gap:10px;align-items:baseline}
+.facts li::before{content:"";flex:none;width:8px;height:8px;background:var(--flag);transform:translateY(-1px)}
+.btn{appearance:none;border:0;border-radius:8px;background:var(--flag);color:var(--flag-ink);font-family:var(--display);font-stretch:85%;font-weight:700;font-size:19px;letter-spacing:.02em;padding:16px 20px;width:100%;cursor:pointer;text-align:center;text-decoration:none;display:block}
+.btn:hover{filter:brightness(1.06)}
+.btn:focus-visible,.opt:focus-visible,input:focus-visible,select:focus-visible,.back:focus-visible{outline:3px solid var(--pine);outline-offset:2px}
+.back{appearance:none;background:none;border:0;color:var(--muted);font:inherit;font-size:14px;padding:6px 0;cursor:pointer;text-decoration:underline;align-self:flex-start}
+/* progress: one segment per question */
+.steps{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+.steps i{height:6px;background:var(--line);border-radius:2px}
+.steps i.done{background:var(--pine)}
+.steps i.now{background:var(--flag)}
+.count{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{appearance:none;text-align:left;font:inherit;color:var(--ink);background:var(--sheet);border:1.5px solid var(--line);border-radius:8px;padding:14px 16px;cursor:pointer;min-height:54px}
+.opt:hover{border-color:var(--pine)}
+.opt.sel{border-color:var(--pine);background:#EAF1ED;font-weight:600}
+form{display:flex;flex-direction:column;gap:14px}
+label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600}
+input[type=text],input[type=email],input[type=tel],select{font:inherit;font-weight:400;color:var(--ink);background:var(--sheet);border:1.5px solid var(--line);border-radius:8px;padding:13px 14px;width:100%}
+.consent{flex-direction:row;align-items:flex-start;gap:10px;font-weight:400;font-size:12.5px;color:var(--muted);line-height:1.45}
+.consent input{margin-top:3px;flex:none;width:18px;height:18px}
+.err{color:#A32A12;font-size:14px;font-weight:600}
+/* score ruler */
+.score{display:flex;align-items:baseline;gap:8px;font-family:var(--display);font-stretch:80%;font-weight:800;font-variant-numeric:tabular-nums}
+.score b{font-size:68px;line-height:.9}
+.score span{font-size:24px;color:var(--muted)}
+.ruler{position:relative;height:22px;border:1.5px solid var(--ink);border-radius:3px;background:
+  repeating-linear-gradient(90deg,transparent 0,transparent calc(2.5% - 1px),rgba(22,36,31,.28) calc(2.5% - 1px),rgba(22,36,31,.28) 2.5%),var(--sheet);overflow:hidden}
+.ruler .fill{position:absolute;inset:0 auto 0 0;background:var(--pine);opacity:.85}
+.marks{position:relative;height:18px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.marks span{position:absolute;top:2px;transform:translateX(-50%);white-space:nowrap}
+.marks span:first-child{transform:none}
+.marks span:last-child{transform:translateX(-100%)}
+.tier{align-self:flex-start;font-family:var(--display);font-stretch:80%;font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;background:var(--ink);color:#fff;padding:5px 10px;border-radius:3px}
+.gaps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.gaps li{border-left:4px solid var(--flag);padding:2px 0 2px 14px}
+.gaps strong{display:block;font-family:var(--display);font-stretch:85%;font-size:17px}
+.gaps span{font-size:15px;color:var(--muted)}
+.event{background:var(--ink);color:#fff;border-radius:10px;padding:22px 20px;display:flex;flex-direction:column;gap:12px}
+.event .eyebrow{color:#F3B08F}
+.event p{color:#D4DDD8;font-size:15px}
+.when{font-family:var(--display);font-stretch:82%;font-weight:700;font-size:20px;color:#fff}
+.note{font-size:13px;color:#F3B08F}
+.legal{font-size:11.5px;line-height:1.5;color:var(--muted)}
+[hidden]{display:none!important}
+@media (max-width:400px){h1{font-size:32px}.score b{font-size:58px}}
+@media (prefers-reduced-motion:no-preference){.ruler .fill{transition:width .7s ease-out}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><strong>Build-Ready Score</strong><span>Scott Morris · Union Home Mortgage</span></div>
+  <div class="preview" id="previewNote">Preview. The lead form and webinar button are not connected yet.</div>
+
+  <!-- Intro -->
+  <section class="sheet" id="intro">
+    <span class="eyebrow">Free 2-minute self-check</span>
+    <h1>How close are you to breaking ground on a new home?</h1>
+    <p class="lede">Answer 8 questions about your land, builder, budget and financing. You get a score out of 40 and the specific pieces you still need before a builder can start.</p>
+    <ul class="facts">
+      <li>Works for site-built, modular and manufactured homes</li>
+      <li>For buyers building in Virginia, North Carolina and West Virginia</li>
+      <li>No credit pull. Your answers are your own estimates.</li>
+    </ul>
+    <button class="btn" id="startBtn" type="button">Get my score</button>
+  </section>
+
+  <!-- Quiz -->
+  <section class="sheet" id="quiz" hidden>
+    <div class="steps" id="steps" aria-hidden="true"></div>
+    <div class="count" id="count"></div>
+    <h2 id="qText"></h2>
+    <div class="opts" id="opts"></div>
+    <button class="back" id="backBtn" type="button">Back</button>
+  </section>
+
+  <!-- Lead form -->
+  <section class="sheet" id="lead" hidden>
+    <span class="eyebrow">Your score is ready</span>
+    <h2>Where should we send your results?</h2>
+    <form id="leadForm" novalidate>
+      <label for="fn">First name<input id="fn" type="text" autocomplete="given-name" required></label>
+      <label for="em">Email<input id="em" type="email" autocomplete="email" inputmode="email" required></label>
+      <label for="ph">Mobile phone<input id="ph" type="tel" autocomplete="tel" inputmode="tel" required></label>
+      <label for="st">Where will you build?
+        <select id="st" required>
+          <option value="">Choose a state</option>
+          <option>Virginia</option><option>North Carolina</option><option>West Virginia</option>
+          <option>Pennsylvania</option><option>Ohio</option><option>Washington, DC</option>
+          <option>Another state</option>
+        </select>
+      </label>
+      <label class="consent" for="ok"><input id="ok" type="checkbox" required>
+        <span>I agree that Scott Morris of Union Home Mortgage may contact me by call, text and email at the number and address above about my results and home financing, including by automated means. Consent is not a condition of any purchase or loan. Message and data rates may apply. Reply STOP to opt out.</span></label>
+      <div class="err" id="err" role="alert" hidden></div>
+      <button class="btn" type="submit">Show my score</button>
+    </form>
+  </section>
+
+  <!-- Results -->
+  <section id="results" hidden style="display:flex;flex-direction:column;gap:18px">
+    <div class="sheet">
+      <span class="tier" id="tierTag"></span>
+      <div class="score"><b id="scoreNum">0</b><span>/ 40</span></div>
+      <div>
+        <div class="ruler"><div class="fill" id="fill" style="width:0%"></div></div>
+        <div class="marks"><span style="left:0">0</span><span style="left:45%">18</span><span style="left:75%">30</span><span style="left:100%">40</span></div>
+      </div>
+      <h2 id="tierHead"></h2>
+      <p id="tierBody"></p>
+    </div>
+    <div class="sheet" id="gapCard">
+      <span class="eyebrow" id="gapEyebrow">What to work on next</span>
+      <ul class="gaps" id="gapList"></ul>
+    </div>
+    <div class="event">
+      <span class="eyebrow">Free live webinar</span>
+      <h2>Build a New Home on Your Own Land</h2>
+      <div class="when">Wednesday, November 25 · 6:00 PM Eastern</div>
+      <p id="eventBody"></p>
+      <a class="btn" id="ctaBtn" href="#">Save my seat</a>
+      <div class="note" id="ctaNote" hidden>Preview: this button needs your webinar registration link.</div>
+    </div>
+  </section>
+
+  <p class="legal">Scott Morris, Branch Manager &amp; Loan Originator, NMLS #1802398. Union Home Mortgage Corp., NMLS #2229. 708 Sunset Lane, Culpeper, VA 22701. Equal Housing Lender. The Build-Ready Score is an educational self-assessment based only on your own answers. It is not a credit decision, a pre-approval or a commitment to lend. All loans are subject to credit, income, property and program approval.</p>
+</div>
+
+<script>
+// ---- Settings to fill in when this goes live on your own site ----
+var CONFIG = {
+  webinarUrl: "",   // webinar registration link
+  leadWebhook: ""   // URL that receives leads (Lofty, Zapier, etc.)
+};
+
+var QUESTIONS = [
+  {area:"Land", q:"Where are you with land?", gap:"Land is the first piece. If you own it, your equity can often count toward your down payment. If you don't, the lot and the build can sometimes be financed together.",
+   opts:[["I own my land free and clear",5],["I own land and still owe on it",4],["Family is giving or selling me land",4],["I have a lot picked out or under contract",3],["I'm still looking for land",1]]},
+  {area:"Home type", q:"What kind of home do you want to build?", gap:"Site-built, modular and manufactured homes each use different loan programs and timelines. Picking a direction narrows your financing options fast.",
+   opts:[["Site-built custom home",5],["Modular home",5],["Manufactured home",5],["I'm deciding between two",3],["I don't know the difference yet",1]]},
+  {area:"Builder", q:"Do you have a builder or home dealer?", gap:"A lender has to approve your builder or dealer before a construction loan can close. Choosing one early keeps you from losing weeks later.",
+   opts:[["Yes, and we've signed a contract",5],["Yes, I've picked one",4],["I'm talking to a few",3],["I haven't started looking",1]]},
+  {area:"Plans and price", q:"Do you have plans and a price?", gap:"The loan is based on a written price and a set of plans, because the appraiser values the home before it exists. A rough number is not enough to lend on.",
+   opts:[["Plans and a written price from my builder",5],["Plans picked, no firm price yet",3],["A rough budget in my head",2],["Not yet",0]]},
+  {area:"Timeline", q:"When do you want to start building?", gap:"Your start date decides when to lock financing. Start too early and approvals expire. Start too late and your builder's schedule slips.",
+   opts:[["Within 3 months",5],["3 to 6 months",4],["6 to 12 months",3],["More than a year out",1]]},
+  {area:"Credit", q:"How would you describe your credit?", gap:"Construction and land-home programs have different credit requirements. Knowing where you stand a few months ahead gives you time to improve it.",
+   opts:[["Excellent (740 or higher)",5],["Good (680 to 739)",4],["Fair (620 to 679)",3],["Needs work (below 620)",1],["I'm not sure",2]]},
+  {area:"Funds to close", q:"What will you use toward the down payment and closing costs?", gap:"There are more ways to cover the upfront costs than most people expect, including land equity and VA eligibility. The right one depends on your situation.",
+   opts:[["Equity in land I already own",5],["Savings I've set aside",5],["My VA home loan benefit",4],["Some savings, probably not enough",2],["Nothing saved yet",1]]},
+  {area:"Financing", q:"How far along is your financing?", gap:"A construction loan works differently from a regular mortgage: funds are released in stages as the home is built. Most buyers have never seen how that works.",
+   opts:[["Pre-approved for a construction loan",5],["I've talked with a lender",3],["I've looked online but talked to no one",2],["I don't know how construction loans work",0]]}
+];
+
+var TIERS = [
+  {min:30, tag:"Tier 1 · Ready to build", head:"You're ready to break ground.",
+   body:"Your land, builder and numbers are mostly lined up. What's left is getting the construction loan approved and closed so your builder can start on schedule.",
+   event:"You'll see exactly how the loan closes and how your builder gets paid at each stage, so nothing stalls once you start."},
+  {min:18, tag:"Tier 2 · Close", head:"You're close. A few pieces are missing.",
+   body:"You've done real work, but a lender couldn't close your loan today. The items below are what stand between you and a start date.",
+   event:"The webinar walks through each missing piece in order: land, builder approval, plans and price, then the loan itself."},
+  {min:0, tag:"Tier 3 · Getting started", head:"You're early, and this is the right time to plan.",
+   body:"Most people start here. Getting the order of steps right now saves you from paying for plans or land that don't fit a loan you can get.",
+   event:"In about an hour you'll learn the full path from raw land to move-in and what each step costs, before you spend anything."}
+];
+
+// Pure scoring: answers is an array of option indexes.
+function scoreQuiz(answers){
+  var total = 0, parts = [];
+  for (var i = 0; i < QUESTIONS.length; i++){
+    var pts = QUESTIONS[i].opts[answers[i]][1];
+    total += pts; parts.push({area:QUESTIONS[i].area, gap:QUESTIONS[i].gap, pts:pts});
+  }
+  var tier = TIERS.filter(function(t){return total >= t.min;})[0];
+  var gaps = parts.filter(function(p){return p.pts <= 3;}).sort(function(a,b){return a.pts - b.pts;}).slice(0,3);
+  return {total:total, tier:tier, gaps:gaps};
+}
+
+var $ = function(id){return document.getElementById(id);};
+var answers = [], cur = 0;
+if (CONFIG.webinarUrl && CONFIG.leadWebhook) $("previewNote").hidden = true;
+
+function show(id){
+  ["intro","quiz","lead","results"].forEach(function(s){$(s).hidden = (s !== id);});
+  window.scrollTo(0,0);
+}
+function renderQ(){
+  var q = QUESTIONS[cur];
+  $("steps").innerHTML = QUESTIONS.map(function(_,i){return '<i class="'+(i<cur?'done':i===cur?'now':'')+'"></i>';}).join("");
+  $("count").textContent = "Question " + (cur+1) + " of " + QUESTIONS.length + " · " + q.area;
+  $("qText").textContent = q.q;
+  var box = $("opts"); box.innerHTML = "";
+  q.opts.forEach(function(o,i){
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "opt" + (answers[cur]===i ? " sel" : ""); b.textContent = o[0];
+    b.addEventListener("click", function(){
+      answers[cur] = i;
+      if (cur < QUESTIONS.length-1){cur++; renderQ();} else {show("lead"); $("fn").focus();}
+    });
+    box.appendChild(b);
+  });
+}
+$("startBtn").addEventListener("click", function(){cur = 0; show("quiz"); renderQ();});
+$("backBtn").addEventListener("click", function(){ if (cur>0){cur--; renderQ();} else {show("intro");} });
+
+$("leadForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  var fn = $("fn").value.trim(), em = $("em").value.trim(), ph = $("ph").value.trim(), st = $("st").value;
+  var msg = "";
+  if (!fn) msg = "Enter your first name.";
+  else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) msg = "Enter a valid email address.";
+  else if (ph.replace(/\D/g,"").length < 10) msg = "Enter a 10-digit mobile number.";
+  else if (!st) msg = "Choose the state where you plan to build.";
+  else if (!$("ok").checked) msg = "Check the box so we can send your results.";
+  $("err").hidden = !msg; $("err").textContent = msg;
+  if (msg) return;
+
+  var r = scoreQuiz(answers);
+  if (CONFIG.leadWebhook){
+    try{
+      fetch(CONFIG.leadWebhook, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({
+        firstName:fn, email:em, phone:ph, state:st, score:r.total, tier:r.tier.tag,
+        answers:QUESTIONS.map(function(q,i){return {area:q.area, answer:q.opts[answers[i]][0]};}),
+        source:"Build-Ready Score quiz"
+      })}).catch(function(){});
+    }catch(_){}
+  }
+  renderResults(r, fn);
+});
+
+function renderResults(r, fn){
+  $("tierTag").textContent = r.tier.tag;
+  $("scoreNum").textContent = r.total;
+  $("tierHead").textContent = fn + ", " + r.tier.head.charAt(0).toLowerCase() + r.tier.head.slice(1);
+  $("tierBody").textContent = r.tier.body;
+  $("eventBody").textContent = r.tier.event;
+  var list = $("gapList"); list.innerHTML = "";
+  if (!r.gaps.length){
+    $("gapEyebrow").textContent = "No major gaps";
+    var li = document.createElement("li");
+    li.innerHTML = "<strong>Lock in your financing</strong><span>Every area scored well. The next step is a full construction loan approval tied to your builder's contract.</span>";
+    list.appendChild(li);
+  } else {
+    $("gapEyebrow").textContent = r.gaps.length === 1 ? "Your one gap to close" : "Your " + r.gaps.length + " biggest gaps";
+    r.gaps.forEach(function(g){
+      var li = document.createElement("li"), s = document.createElement("strong"), t = document.createElement("span");
+      s.textContent = g.area; t.textContent = g.gap; li.appendChild(s); li.appendChild(t); list.appendChild(li);
+    });
+  }
+  if (CONFIG.webinarUrl){ $("ctaBtn").href = CONFIG.webinarUrl; }
+  else { $("ctaBtn").addEventListener("click", function(e){e.preventDefault(); $("ctaNote").hidden = false;}); }
+  show("results");
+  $("results").style.display = "flex";
+  setTimeout(function(){ $("fill").style.width = (r.total/40*100) + "%"; }, 60);
+}
+</script>
+</body>
+</html>
