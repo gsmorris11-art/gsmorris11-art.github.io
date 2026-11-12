@@ -79,7 +79,7 @@ input[type=text],input[type=email],input[type=tel],select{font:inherit;font-weig
 .event .eyebrow{color:#F3B08F}
 .event p{color:#D4DDD8;font-size:15px}
 .when{font-family:var(--display);font-stretch:82%;font-weight:700;font-size:20px;color:#fff}
-.note{font-size:13px;color:#F3B08F}
+.note{font-size:16px;font-weight:600;color:#fff}
 .legal{font-size:11.5px;line-height:1.5;color:var(--muted)}
 [hidden]{display:none!important}
 @media (max-width:400px){h1{font-size:32px}.score b{font-size:58px}}
@@ -158,7 +158,7 @@ input[type=text],input[type=email],input[type=tel],select{font:inherit;font-weig
       <div class="when">Wednesday, November 25 · 6:00 PM Eastern</div>
       <p id="eventBody"></p>
       <a class="btn" id="ctaBtn" href="#">Save my seat</a>
-      <div class="note" id="ctaNote" hidden>Preview: this button needs your webinar registration link.</div>
+      <div class="note" id="ctaNote" role="status" hidden></div>
     </div>
   </section>
 
@@ -237,8 +237,8 @@ function scoreQuiz(answers){
 }
 
 var $ = function(id){return document.getElementById(id);};
-var answers = [], cur = 0;
-if (CONFIG.webinarUrl) $("previewNote").hidden = true;
+var answers = [], cur = 0, currentLead = null;
+$("previewNote").hidden = true;
 
 function show(id){
   ["intro","quiz","lead","results"].forEach(function(s){$(s).hidden = (s !== id);});
@@ -278,9 +278,25 @@ $("leadForm").addEventListener("submit", function(e){
   var r = scoreQuiz(answers);
   var summary = "Build-Ready Score: " + r.total + "/40 (" + r.tier.tag + ")\nBuilding in: " + st + "\nConsented to call/text/email: yes\n\n" +
     QUESTIONS.map(function(q,i){return q.area + ": " + q.opts[answers[i]][0];}).join("\n");
-  sendLead({firstName:fn, email:em, phone:ph, summary:summary});
+  currentLead = {firstName:fn, email:em, phone:ph, summary:summary};
+  sendLead(currentLead);
   renderResults(r, fn);
 });
+
+// One-tap webinar signup: adds the registration to the lead's HubSpot record.
+function saveSeat(e){
+  e.preventDefault();
+  var btn = $("ctaBtn"), note = $("ctaNote");
+  if (btn.dataset.busy) return;
+  btn.dataset.busy = "1"; btn.textContent = "Saving your seat...";
+  var lead = {firstName:currentLead.firstName, email:currentLead.email, phone:currentLead.phone,
+    summary:"WEBINAR: Registered for Nov 25, 6 PM ET (from quiz)\n\n" + currentLead.summary};
+  sendLead(lead).then(function(ok){
+    delete btn.dataset.busy; note.hidden = false;
+    if (ok){ btn.hidden = true; note.textContent = "You're registered, " + currentLead.firstName + ". We'll email and text you the link to join before November 25."; }
+    else { btn.textContent = "Save my seat"; note.textContent = "We couldn't save your seat. Check your connection and tap again."; }
+  });
+}
 
 function renderResults(r, fn){
   $("tierTag").textContent = r.tier.tag;
@@ -302,7 +318,7 @@ function renderResults(r, fn){
     });
   }
   if (CONFIG.webinarUrl){ $("ctaBtn").href = CONFIG.webinarUrl; }
-  else { $("ctaBtn").addEventListener("click", function(e){e.preventDefault(); $("ctaNote").hidden = false;}); }
+  else { $("ctaBtn").onclick = saveSeat; }
   show("results");
   $("results").style.display = "flex";
   setTimeout(function(){ $("fill").style.width = (r.total/40*100) + "%"; }, 60);
